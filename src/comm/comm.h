@@ -151,6 +151,12 @@ typedef struct {
   float x;            /**< X axis, Unit:m */
   float y;            /**< Y axis, Unit:m */
   float z;            /**< Z axis, Unit:m */
+} LivoxPointXyz;
+
+typedef struct {
+  float x;            /**< X axis, Unit:m */
+  float y;            /**< Y axis, Unit:m */
+  float z;            /**< Z axis, Unit:m */
   float reflectivity; /**< Reflectivity   */
   uint8_t tag;        /**< Livox point tag   */
   uint8_t line;       /**< Laser line id     */
