@@ -263,7 +263,7 @@ void Lddc::InitPointcloud2MsgHeader(PointCloud2& cloud) {
   cloud.header.frame_id.assign(frame_id_);
   cloud.height = 1;
   cloud.width = 0;
-  cloud.fields.resize(7);
+  cloud.fields.resize(3);
   cloud.fields[0].offset = 0;
   cloud.fields[0].name = "x";
   cloud.fields[0].count = 1;
@@ -276,29 +276,11 @@ void Lddc::InitPointcloud2MsgHeader(PointCloud2& cloud) {
   cloud.fields[2].name = "z";
   cloud.fields[2].count = 1;
   cloud.fields[2].datatype = PointField::FLOAT32;
-  cloud.fields[3].offset = 12;
-  cloud.fields[3].name = "intensity";
-  cloud.fields[3].count = 1;
-  cloud.fields[3].datatype = PointField::FLOAT32;
-  cloud.fields[4].offset = 16;
-  cloud.fields[4].name = "tag";
-  cloud.fields[4].count = 1;
-  cloud.fields[4].datatype = PointField::UINT8;
-  cloud.fields[5].offset = 17;
-  cloud.fields[5].name = "line";
-  cloud.fields[5].count = 1;
-  cloud.fields[5].datatype = PointField::UINT8;
-  cloud.fields[6].offset = 18;
-  cloud.fields[6].name = "timestamp";
-  cloud.fields[6].count = 1;
-  cloud.fields[6].datatype = PointField::FLOAT64;
-  cloud.point_step = sizeof(LivoxPointXyzrtlt);
+  cloud.point_step = sizeof(LivoxPointXyz);
 }
 
 void Lddc::InitPointcloud2Msg(const StoragePacket& pkg, PointCloud2& cloud, uint64_t& timestamp) {
   InitPointcloud2MsgHeader(cloud);
-
-  cloud.point_step = sizeof(LivoxPointXyzrtlt);
 
   cloud.width = pkg.points_num;
   cloud.row_step = cloud.width * cloud.point_step;
@@ -316,20 +298,16 @@ void Lddc::InitPointcloud2Msg(const StoragePacket& pkg, PointCloud2& cloud, uint
       cloud.header.stamp = rclcpp::Time(timestamp);
   #endif
 
-  std::vector<LivoxPointXyzrtlt> points;
+  std::vector<LivoxPointXyz> points;
   for (size_t i = 0; i < pkg.points_num; ++i) {
-    LivoxPointXyzrtlt point;
+    LivoxPointXyz point;
     point.x = pkg.points[i].x;
     point.y = pkg.points[i].y;
     point.z = pkg.points[i].z;
-    point.reflectivity = pkg.points[i].intensity;
-    point.tag = pkg.points[i].tag;
-    point.line = pkg.points[i].line;
-    point.timestamp = static_cast<double>(pkg.points[i].offset_time);
     points.push_back(std::move(point));
   }
-  cloud.data.resize(pkg.points_num * sizeof(LivoxPointXyzrtlt));
-  memcpy(cloud.data.data(), points.data(), pkg.points_num * sizeof(LivoxPointXyzrtlt));
+  cloud.data.resize(pkg.points_num * sizeof(LivoxPointXyz));
+  memcpy(cloud.data.data(), points.data(), pkg.points_num * sizeof(LivoxPointXyz));
 }
 
 void Lddc::PublishPointcloud2Data(const uint8_t index, const uint64_t timestamp, const PointCloud2& cloud) {
@@ -526,27 +504,28 @@ void Lddc::PublishImuData(LidarImuDataQueue& imu_data_queue, const uint8_t index
 #ifdef BUILDING_ROS2
 std::shared_ptr<rclcpp::PublisherBase> Lddc::CreatePublisher(uint8_t msg_type,
     std::string &topic_name, uint32_t queue_size) {
+    rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS();
     if (kPointCloud2Msg == msg_type) {
       DRIVER_INFO(*cur_node_,
           "%s publish use PointCloud2 format", topic_name.c_str());
-      return cur_node_->create_publisher<PointCloud2>(topic_name, queue_size);
+      return cur_node_->create_publisher<PointCloud2>(topic_name, sensor_data_qos);
     } else if (kLivoxCustomMsg == msg_type) {
       DRIVER_INFO(*cur_node_,
           "%s publish use livox custom format", topic_name.c_str());
-      return cur_node_->create_publisher<CustomMsg>(topic_name, queue_size);
+      return cur_node_->create_publisher<CustomMsg>(topic_name, sensor_data_qos);
     }
 #if 0
     else if (kPclPxyziMsg == msg_type)  {
       DRIVER_INFO(*cur_node_,
           "%s publish use pcl PointXYZI format", topic_name.c_str());
-      return cur_node_->create_publisher<PointCloud>(topic_name, queue_size);
+      return cur_node_->create_publisher<PointCloud>(topic_name, sensor_data_qos);
     }
 #endif
     else if (kLivoxImuMsg == msg_type)  {
       DRIVER_INFO(*cur_node_,
           "%s publish use imu format", topic_name.c_str());
       return cur_node_->create_publisher<ImuMsg>(topic_name,
-          queue_size);
+          sensor_data_qos);
     } else {
       PublisherPtr null_publisher(nullptr);
       return null_publisher;
