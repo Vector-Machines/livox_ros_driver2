@@ -263,7 +263,7 @@ void Lddc::InitPointcloud2MsgHeader(PointCloud2& cloud) {
   cloud.header.frame_id.assign(frame_id_);
   cloud.height = 1;
   cloud.width = 0;
-  cloud.fields.resize(3);
+  cloud.fields.resize(7);
   cloud.fields[0].offset = 0;
   cloud.fields[0].name = "x";
   cloud.fields[0].count = 1;
@@ -276,11 +276,29 @@ void Lddc::InitPointcloud2MsgHeader(PointCloud2& cloud) {
   cloud.fields[2].name = "z";
   cloud.fields[2].count = 1;
   cloud.fields[2].datatype = PointField::FLOAT32;
-  cloud.point_step = sizeof(LivoxPointXyz);
+  cloud.fields[3].offset = 12;
+  cloud.fields[3].name = "intensity";
+  cloud.fields[3].count = 1;
+  cloud.fields[3].datatype = PointField::FLOAT32;
+  cloud.fields[4].offset = 16;
+  cloud.fields[4].name = "tag";
+  cloud.fields[4].count = 1;
+  cloud.fields[4].datatype = PointField::UINT8;
+  cloud.fields[5].offset = 17;
+  cloud.fields[5].name = "line";
+  cloud.fields[5].count = 1;
+  cloud.fields[5].datatype = PointField::UINT8;
+  cloud.fields[6].offset = 18;
+  cloud.fields[6].name = "timestamp";
+  cloud.fields[6].count = 1;
+  cloud.fields[6].datatype = PointField::FLOAT64;
+  cloud.point_step = sizeof(LivoxPointXyzrtlt);
 }
 
 void Lddc::InitPointcloud2Msg(const StoragePacket& pkg, PointCloud2& cloud, uint64_t& timestamp) {
   InitPointcloud2MsgHeader(cloud);
+
+  cloud.point_step = sizeof(LivoxPointXyzrtlt);
 
   cloud.width = pkg.points_num;
   cloud.row_step = cloud.width * cloud.point_step;
@@ -298,16 +316,20 @@ void Lddc::InitPointcloud2Msg(const StoragePacket& pkg, PointCloud2& cloud, uint
       cloud.header.stamp = rclcpp::Time(timestamp);
   #endif
 
-  std::vector<LivoxPointXyz> points;
+  std::vector<LivoxPointXyzrtlt> points;
   for (size_t i = 0; i < pkg.points_num; ++i) {
-    LivoxPointXyz point;
+    LivoxPointXyzrtlt point;
     point.x = pkg.points[i].x;
     point.y = pkg.points[i].y;
     point.z = pkg.points[i].z;
+    point.reflectivity = pkg.points[i].intensity;
+    point.tag = pkg.points[i].tag;
+    point.line = pkg.points[i].line;
+    point.timestamp = static_cast<double>(pkg.points[i].offset_time);
     points.push_back(std::move(point));
   }
-  cloud.data.resize(pkg.points_num * sizeof(LivoxPointXyz));
-  memcpy(cloud.data.data(), points.data(), pkg.points_num * sizeof(LivoxPointXyz));
+  cloud.data.resize(pkg.points_num * sizeof(LivoxPointXyzrtlt));
+  memcpy(cloud.data.data(), points.data(), pkg.points_num * sizeof(LivoxPointXyzrtlt));
 }
 
 void Lddc::PublishPointcloud2Data(const uint8_t index, const uint64_t timestamp, const PointCloud2& cloud) {
@@ -465,12 +487,17 @@ void Lddc::InitImuMsg(const ImuData& imu_data, ImuMsg& imu_msg, uint64_t& timest
   imu_msg.header.stamp = rclcpp::Time(timestamp);  // to ros time stamp
 #endif
 
+  // Standard gravity constant (m/s^2)
+  const double G = 9.80665;
+
   imu_msg.angular_velocity.x = imu_data.gyro_x;
   imu_msg.angular_velocity.y = imu_data.gyro_y;
   imu_msg.angular_velocity.z = imu_data.gyro_z;
-  imu_msg.linear_acceleration.x = imu_data.acc_x;
-  imu_msg.linear_acceleration.y = imu_data.acc_y;
-  imu_msg.linear_acceleration.z = imu_data.acc_z;
+  
+  // Convert acceleration from g to m/s^2
+  imu_msg.linear_acceleration.x = imu_data.acc_x * G;
+  imu_msg.linear_acceleration.y = imu_data.acc_y * G;
+  imu_msg.linear_acceleration.z = imu_data.acc_z * G;
 }
 
 void Lddc::PublishImuData(LidarImuDataQueue& imu_data_queue, const uint8_t index) {
