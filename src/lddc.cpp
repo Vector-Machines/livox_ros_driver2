@@ -325,7 +325,8 @@ void Lddc::InitPointcloud2Msg(const StoragePacket& pkg, PointCloud2& cloud, uint
     point.reflectivity = pkg.points[i].intensity;
     point.tag = pkg.points[i].tag;
     point.line = pkg.points[i].line;
-    point.timestamp = static_cast<double>(pkg.points[i].offset_time) / 1000000000.0;
+    // Calculate relative offset time in seconds
+    point.timestamp = static_cast<double>(pkg.points[i].offset_time - pkg.base_time) / 1e9;
     points.push_back(std::move(point));
   }
   cloud.data.resize(pkg.points_num * sizeof(LivoxPointXyzrtlt));
