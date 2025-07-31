@@ -72,6 +72,11 @@ bool LivoxLidarConfigParser::ParseUserConfigs(const rapidjson::Document &doc,
 
     // parse user configs
     user_config.handle = IpStringToNum(std::string(config["ip"].GetString()));
+    if (!config.HasMember("name")) {
+      user_config.ld_name = config["ip"].GetString();
+    } else {
+      user_config.ld_name = config["name"].GetString();
+    }
     if (!config.HasMember("pcl_data_type")) {
       user_config.pcl_data_type = -1;
     } else {
@@ -92,6 +97,13 @@ bool LivoxLidarConfigParser::ParseUserConfigs(const rapidjson::Document &doc,
     } else {
       user_config.dual_emit_en = static_cast<uint8_t>(config["dual_emit_en"].GetInt());
     }
+    if (!config.HasMember("frame_id")) {
+      user_config.frame_id = "livox_lidar";
+      std::cout << "No frame id was given, set to default of 'livox_lidar'" << std::endl;
+    } else {
+      user_config.frame_id = static_cast<std::string>(config["frame_id"].GetString());
+    }
+    
     if (!config.HasMember("extrinsic_parameter")) {
       memset(&user_config.extrinsic_param, 0, sizeof(user_config.extrinsic_param));
     } else {

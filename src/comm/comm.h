@@ -264,7 +264,9 @@ typedef struct {
   int8_t pattern_mode;
   int32_t blind_spot_set;
   int8_t dual_emit_en;
+  std::string frame_id;
   ExtParameter extrinsic_param;
+  std::string ld_name;
   volatile uint32_t set_bits;
   volatile uint32_t get_bits;
 } UserLivoxLidarConfig;
