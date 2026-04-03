@@ -28,8 +28,10 @@ message(STATUS "${PROJECT_NAME} version: ${LIVOX_ROS_DRIVER2_VERSION}")
 # Add ROS Version MACRO
 #---------------------------------------------------------------------------------------
 add_definitions(-DBUILDING_ROS2)
+add_compile_definitions(SPDLOG_FMT_EXTERNAL)
 
 # find dependencies
+find_package(fmt REQUIRED)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 find_package(PCL REQUIRED)
@@ -104,6 +106,7 @@ target_link_libraries(${PROJECT_NAME}
   ${Boost_LIBRARY}
   ${PCL_LIBRARIES}
   ${APR_LIBRARIES}
+  fmt
 )
 
 rclcpp_components_register_node(${PROJECT_NAME}
