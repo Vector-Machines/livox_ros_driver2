@@ -505,13 +505,13 @@ void Lddc::InitImuMsg(const ImuData& imu_data, ImuMsg& imu_msg, uint64_t& timest
   imu_msg.orientation_covariance[0] = -1;
   
   // ICM-40609D, has gyro noise 0.045 d/s RMS + 1 d/s at 25C
-  static constexpr double gyro_cov = 3.33e-4;
+  static constexpr double gyro_cov = 0.018;
   imu_msg.angular_velocity_covariance[0] = gyro_cov;
   imu_msg.angular_velocity_covariance[4] = gyro_cov;
   imu_msg.angular_velocity_covariance[8] = gyro_cov;
 
   // ICM-40609D, has accel noise 1.0 mg rms + 40mg at init
-  static constexpr double linear_accel_cov = 1.68e-3;
+  static constexpr double linear_accel_cov = 0.041;
   imu_msg.linear_acceleration_covariance[0] = linear_accel_cov;
   imu_msg.linear_acceleration_covariance[4] = linear_accel_cov;
   imu_msg.linear_acceleration_covariance[8] = linear_accel_cov;
