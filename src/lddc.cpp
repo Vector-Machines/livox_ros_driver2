@@ -491,7 +491,7 @@ void Lddc::InitImuMsg(const ImuData& imu_data, ImuMsg& imu_msg, uint64_t& timest
 #endif
 
   // Standard gravity constant (m/s^2)
-  const double G = 9.80665;
+  static constexpr double G = 9.80665;
 
   imu_msg.angular_velocity.x = imu_data.gyro_x;
   imu_msg.angular_velocity.y = imu_data.gyro_y;
@@ -501,6 +501,21 @@ void Lddc::InitImuMsg(const ImuData& imu_data, ImuMsg& imu_msg, uint64_t& timest
   imu_msg.linear_acceleration.x = imu_data.acc_x * G;
   imu_msg.linear_acceleration.y = imu_data.acc_y * G;
   imu_msg.linear_acceleration.z = imu_data.acc_z * G;
+
+  imu_msg.orientation_covariance[0] = -1;
+  
+  // ICM-40609D, has gyro noise 0.045 d/s RMS + 1 d/s at 25C
+  static constexpr double gyro_cov = 3.33e-4;
+  imu_msg.angular_velocity_covariance[0] = gyro_cov;
+  imu_msg.angular_velocity_covariance[4] = gyro_cov;
+  imu_msg.angular_velocity_covariance[8] = gyro_cov;
+
+  // ICM-40609D, has accel noise 1.0 mg rms + 40mg at init
+  static constexpr double linear_accel_cov = 1.68e-3;
+  imu_msg.linear_acceleration_covariance[0] = linear_accel_cov;
+  imu_msg.linear_acceleration_covariance[4] = linear_accel_cov;
+  imu_msg.linear_acceleration_covariance[8] = linear_accel_cov;
+
 }
 
 void Lddc::PublishImuData(LidarImuDataQueue& imu_data_queue, const uint8_t index, const std::string& frame_id) {
